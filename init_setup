@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# =============================================================================
+# setup.sh — esempio di script con domande Yes/No e task misti
+# =============================================================================
+
+# ── Colori per output leggibile ───────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+# ── Funzione centrale: ask_yn ─────────────────────────────────────────────────
+# Uso:   ask_yn "Vuoi fare X?"
+# Ritorna: 0 = sì, 1 = no
+ask_yn() {
+    local prompt="$1"
+    local answer
+
+    while true; do
+        printf "${CYAN}?${RESET} ${BOLD}%s${RESET} [y/N] " "$prompt"
+        read -r answer
+        case "${answer,,}" in          # ,, = lowercase in bash 4+
+            y|yes|s|si|sì) return 0 ;;
+            n|no|"")       return 1 ;;
+            *) echo "  Risposta non valida. Scrivi y oppure n." ;;
+        esac
+    done
+}
+
+# ── Helper per log ────────────────────────────────────────────────────────────
+log_ok()   { echo -e "  ${GREEN}✓${RESET} $1"; }
+log_skip() { echo -e "  ${YELLOW}–${RESET} Saltato: $1"; }
+log_info() { echo -e "  ${CYAN}→${RESET} $1"; }
+log_err()  { echo -e "  ${RED}✗${RESET} $1" >&2; }
+
+# ── Funzione che simula un task (sostituisci con i comandi reali) ─────────────
+run_task() {
+    local desc="$1"
+    shift
+    log_info "Eseguo: $desc"
+    # "$@"          # ← decommenta per eseguire davvero i comandi
+    sleep 0.3       # ← simula lavoro
+    log_ok "$desc completato."
+}
+
+# =============================================================================
+# SCRIPT PRINCIPALE
+# =============================================================================
+
+echo
+echo -e "${BOLD}══════════════════════════════════════════${RESET}"
+echo -e "${BOLD}          Setup iniziale del sistema       ${RESET}"
+echo -e "${BOLD}══════════════════════════════════════════${RESET}"
+echo
+
+# ── FASE 1: task OBBLIGATORI (nessuna domanda, eseguiti sempre) ───────────────
+echo -e "${BOLD}[1/3] Aggiornamento sistema${RESET}"
+run_task "apt-get update"          # apt-get update -qq
+run_task "apt-get upgrade"         # apt-get upgrade -y
+echo
+
+# ── FASE 2: task OPZIONALI ────────────────────────────────────────────────────
+echo -e "${BOLD}[2/3] Installazioni opzionali${RESET}"
+
+# Git (opzionale)
+if ask_yn "Installare git?"; then
+    run_task "Installazione git"   # apt-get install -y git
+else
+    log_skip "git"
+fi
+
+# curl (opzionale)
+if ask_yn "Installare curl?"; then
+    run_task "Installazione curl"  # apt-get install -y curl
+else
+    log_skip "curl"
+fi
+
+# zsh + Oh My Zsh (opzionale, con sotto-domanda)
+if ask_yn "Installare zsh?"; then
+    run_task "Installazione zsh"   # apt-get install -y zsh
+
+    # Sotto-domanda: Oh My Zsh
+    if ask_yn "  Installare anche Oh My Zsh (da GitHub)?"; then
+        run_task "Download Oh My Zsh"
+        # sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+        run_task "Impostazione zsh come shell predefinita"
+        # chsh -s "$(which zsh)"
+    fi
+else
+    log_skip "zsh"
+fi
+
+echo
+
+# ── FASE 3: task OBBLIGATORI finali ──────────────────────────────────────────
+echo -e "${BOLD}[3/3] Configurazione finale (obbligatoria)${RESET}"
+run_task "Pulizia cache"           # apt-get autoremove -y && apt-get clean
+run_task "Scrittura log di setup"  # echo "$(date)" >> /var/log/setup.log
+echo
+
+# ── Riepilogo ─────────────────────────────────────────────────────────────────
+echo -e "${BOLD}══════════════════════════════════════════${RESET}"
+echo -e "${GREEN}${BOLD}  Setup completato!${RESET}"
+echo -e "${BOLD}══════════════════════════════════════════${RESET}"
+echo
