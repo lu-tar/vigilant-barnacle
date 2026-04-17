@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Check if both arguments are provided
+if [ $# -ne 2 ]; then
+    echo "Usage: klogs <podname> <namespace>"
+    exit 1
+fi
+
+PODNAME=$1
+NAMESPACE=$2
+OUTPUT_DIR="/mnt/c/Users/TRZLCU97E/home/notepad"
+
+# Create output directory if it doesn't exist
+mkdir -p "$OUTPUT_DIR"
+
+# Collect logs
+kubectl logs "$PODNAME" -n "$NAMESPACE" >> "$OUTPUT_DIR/$PODNAME.logs"
+
+echo "Logs saved to: $OUTPUT_DIR/$PODNAME.logs"

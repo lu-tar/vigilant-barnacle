@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+
+# use-context: fuzzy-select a kubectl context and switch to it
+
+selected=$(kubectl config get-contexts -o name | fzf \
+  --prompt="Select kube context > " \
+  --height=40% \
+  --layout=reverse \
+  --border)
+
+if [[ -z "$selected" ]]; then
+  echo "No context selected. Aborting."
+  exit 0
+fi
+
+kubectl config use-context "$selected"
+kubectl config current-context
